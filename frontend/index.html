@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="CrysTech ERP oferece gestão empresarial moderna com recursos de finanças, vendas, estoque e relatórios para pequenas e médias empresas." />
+    <meta name="keywords" content="ERP, gestão empresarial, finanças, estoque, vendas, CrysTech, software empresarial" />
+    <meta name="author" content="CrysTech" />
+    <meta property="og:title" content="CrysTech ERP" />
+    <meta property="og:description" content="CrysTech ERP oferece gestão empresarial moderna com recursos de finanças, vendas, estoque e relatórios para pequenas e médias empresas." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_PT" />
+
+    <link rel="icon" href="/public/favicon.ico" />
+
+    <title>Horizon</title>
+  
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem('app-theme') || 'light';
+          var root = document.documentElement;
+
+          if (theme === 'dark') {
+            root.classList.add('dark');
+          } else if (theme === 'system') {
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) root.classList.add('dark');
+          } else {
+            // light — garante que dark é removido mesmo que o SO use tema escuro
+            root.classList.remove('dark');
+          }
+
+          // Aplica a cor de destaque guardada antes do React carregar
+          var accent = localStorage.getItem('app-accent') || 'violet';
+          var colors = {
+            violet:  '#7c3aed',
+            blue:    '#2563eb',
+            emerald: '#059669',
+            rose:    '#e11d48',
+            orange:  '#ea580c',
+            slate:   '#475569',
+          };
+          var hex = colors[accent] || colors.violet;
+          root.style.setProperty('--color-primary', hex);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
