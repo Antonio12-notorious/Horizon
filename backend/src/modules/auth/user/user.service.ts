@@ -264,6 +264,64 @@ export async function getUserById(id: string) {
     return user;
 }
 
+// ─── Perfil do Utilizador (atualizar próprio perfil) ────────────────────────
+
+export async function updateProfile(
+    userId: string,
+    data: {
+        name?: string;
+        phone?: string;
+        location?: string;
+        avatar?: string;
+    }
+) {
+    const updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+            ...(data.name && { name: data.name }),
+            ...(data.phone && { contact: data.phone }),
+            ...(data.avatar !== undefined && { avatar: data.avatar }),
+        },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            contact: true,
+            avatar: true,
+            verified: true,
+            createdAt: true,
+            updatedAt: true,
+        },
+    });
+
+    return updated;
+}
+
+// ─── Obter Perfil do Utilizador ──────────────────────────────────────────────
+
+export async function getProfile(userId: string) {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            contact: true,
+            avatar: true,
+            verified: true,
+            createdAt: true,
+            updatedAt: true,
+        },
+    });
+
+    if (!user) throw new AppError(404, "Utilizador não encontrado");
+    return user;
+}
+
 // ─── Helper: gerar senha temporária ──────────────────────────────────────────
 
 function generateTempPassword(): string {

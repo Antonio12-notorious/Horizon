@@ -2,7 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import app from "./app";
+import app from "./app.js";
 import { config } from "./config";
 
 const server = app.listen(config.server.port, () => {

@@ -35,6 +35,7 @@ model User {
   status           UserStatus @default(PENDENTE)
   department       String?
   contact          String?
+  avatar           String?    @db.Text
   mustChangePassword Boolean  @default(true)
 
   // auditoria

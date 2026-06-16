@@ -10,15 +10,21 @@ import {
     resetUserPassword,
     getUserLogs,
     getSecurityLogs,
+    updateProfile,
+    getProfile,
 } from "./user.controller";
 import { authMiddleware } from "../../../middleware/auth.middleware";
 import { roleMiddleware } from "../../../middleware/role.middleware";
 import { validateSchema } from "../../../middleware/validate.middleware";
 import { asyncHandler } from "../../../utils/asyncHandler";
-import { createUserSchema, updateUserSchema } from "../../../schemas/user.schemas";
+import { createUserSchema, updateUserSchema, updateProfileSchema } from "../../../schemas/user.schemas";
 const router = Router();
 
-// todas as rotas exigem auth + role ADMIN
+// ─── Rotas de perfil do próprio usuário (exigem autenticação) ────────────────
+router.put("/profile", authMiddleware, validateSchema(updateProfileSchema), asyncHandler(updateProfile));
+router.get("/profile", authMiddleware, asyncHandler(getProfile));
+
+// ─── Rotas de admin (exigem autenticação + role ADMIN) ──────────────────────
 router.use(authMiddleware);
 router.use(roleMiddleware(["ADMIN"]));
 

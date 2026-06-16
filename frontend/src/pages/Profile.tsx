@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, Shield, Calendar, MapPin, Phone, Camera, Save, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,13 +9,52 @@ export const API_URL = "http://localhost:3001";
 export function Profile() {
   const { user, role, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || '+351 912 345 678',
-    location: user?.location || 'Lisboa, Portugal'
+    phone: user?.phone || '+258 8786 68672',
+    location: 'Cidade da Beira, Moçambique'
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Carregar dados do perfil ao montar o componente
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/users/profile`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user) {
+            updateUser({
+              name: data.user.name,
+              email: data.user.email,
+              phone: data.user.contact,
+              avatar: data.user.avatar
+            });
+            setFormData({
+              name: data.user.name,
+              email: data.user.email,
+              phone: data.user.contact || '+258 8786 68672',
+              location: 'Cidade da Beira, Moçambique'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar perfil:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [updateUser]);
 
   const handlePhotoClick = () => {
     fileInputRef.current?.click();
@@ -29,24 +68,74 @@ export function Profile() {
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        updateUser({ avatar: reader.result as string });
-        toast.success('Foto de perfil atualizada!');
+      reader.onloadend = async () => {
+        const avatarData = reader.result as string;
+        updateUser({ avatar: avatarData });
+        
+        try {
+          const response = await fetch(`${API_URL}/api/users/profile`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ avatar: avatarData })
+          });
+          
+          // if (response.ok) {
+          //   toast.success('Foto de perfil atualizada!');
+          // } else {
+          //   toast.error('Erro ao salvar foto do perfil');
+          // }
+        } catch (error) {
+          console.error('Erro ao salvar avatar:', error);
+          toast.error('Erro ao salvar foto do perfil');
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSave = () => {
-    updateUser({ 
-      name: formData.name, 
-      email: formData.email,
-      phone: formData.phone,
-      location: formData.location
-    });
-    setIsEditing(false);
-    toast.success('Perfil atualizado com sucesso!');
+  const handleSave = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          location: formData.location
+        })
+      });
+
+      if (response.ok) {
+        updateUser({ 
+          name: formData.name, 
+          email: formData.email,
+          phone: formData.phone
+        });
+        setIsEditing(false);
+        toast.success('Perfil atualizado com sucesso!');
+      } else {
+        toast.error('Erro ao atualizar perfil');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+      toast.error('Erro ao atualizar perfil');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8 p-4 lg:p-0 flex items-center justify-center min-h-screen">
+        <div className="text-gray-400">Carregando perfil...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 p-4 lg:p-0">
@@ -117,7 +206,7 @@ export function Profile() {
                     />
                   ) : (
                     <span className="text-gray-400 dark:text-gray-500 text-sm font-bold transition-colors truncate max-w-[120px]">
-                      {user?.location || 'Cidade da Beira, Mocambique'}
+                      {user?.location || 'Cidade da Beira, Moçambique'}
                     </span>
                   )}
                 </div>

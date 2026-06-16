@@ -12,24 +12,23 @@ router.get("/", authMiddleware, async (req, res) => {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
+        // Ontem (para comparação de tendência de agendamentos)
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         lastDayOfMonth.setHours(23, 59, 59, 999);
 
-        // mês anterior
         const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
         lastDayLastMonth.setHours(23, 59, 59, 999);
 
-        // ontem
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-
         const [
             clientsCount,
             clientsLastMonth,
-            appointmentsToday,
-            appointmentsYesterday,
+            appointmentsToday,       // ✅ CORRIGIDO: só conta agendamentos de hoje
+            appointmentsYesterday,   // ✅ CORRIGIDO: compara com ontem (faz mais sentido para "hoje")
             billingMonth,
             billingLastMonth,
             pendingInvoices,
@@ -38,20 +37,29 @@ router.get("/", authMiddleware, async (req, res) => {
             recentAppointments,
             recentInvoicesList,
         ] = await Promise.all([
+            // Total de clientes
             prisma.client.count(),
 
+            // Clientes até ao fim do mês passado
             prisma.client.count({
                 where: { createdAt: { lte: lastDayLastMonth } },
             }),
 
+            // ✅ CORRIGIDO: agendamentos com date de hoje (não createdAt)
             prisma.appointment.count({
-                where: { date: { gte: today, lt: tomorrow } },
+                where: {
+                    date: { gte: today, lt: tomorrow },
+                },
             }),
 
+            // ✅ CORRIGIDO: agendamentos de ontem para calcular tendência
             prisma.appointment.count({
-                where: { date: { gte: yesterday, lt: today } },
+                where: {
+                    date: { gte: yesterday, lt: today },
+                },
             }),
 
+            // Faturação do mês actual (faturas pagas)
             prisma.invoice.aggregate({
                 _sum: { total: true },
                 where: {
@@ -60,6 +68,7 @@ router.get("/", authMiddleware, async (req, res) => {
                 },
             }),
 
+            // Faturação do mês passado
             prisma.invoice.aggregate({
                 _sum: { total: true },
                 where: {
@@ -68,8 +77,10 @@ router.get("/", authMiddleware, async (req, res) => {
                 },
             }),
 
+            // Faturas pendentes (total)
             prisma.invoice.count({ where: { status: "Pendente" } }),
 
+            // Faturas pendentes do mês passado
             prisma.invoice.count({
                 where: {
                     status: "Pendente",
@@ -77,15 +88,20 @@ router.get("/", authMiddleware, async (req, res) => {
                 },
             }),
 
+            // Faturas pagas (total)
             prisma.invoice.count({ where: { status: "Pago" } }),
 
+            // ✅ CORRIGIDO: próximos agendamentos (date >= hoje, ordenados por data asc)
             prisma.appointment.findMany({
                 take: 5,
+                where: {
+                    date: { gte: today },
+                },
                 orderBy: { date: "asc" },
-                where: { date: { gte: today } },
                 include: { client: true, service: true },
             }),
 
+            // Últimas faturas pendentes
             prisma.invoice.findMany({
                 take: 5,
                 where: { status: "Pendente" },
@@ -94,7 +110,7 @@ router.get("/", authMiddleware, async (req, res) => {
             }),
         ]);
 
-        // ─── Últimos 6 meses de faturação ─────────────────────────────────────
+        // Gráfico de faturação — últimos 6 meses
         const billingChart = [];
         const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -118,7 +134,7 @@ router.get("/", authMiddleware, async (req, res) => {
             });
         }
 
-        // ─── Calcular trends ──────────────────────────────────────────────────
+        // Funções de tendência
         const calcTrend = (current: number, previous: number) => {
             if (previous === 0) return current > 0 ? "+100%" : "0%";
             const diff = ((current - previous) / previous) * 100;
@@ -136,12 +152,12 @@ router.get("/", authMiddleware, async (req, res) => {
         res.json({
             metrics: {
                 clientsCount,
-                appointmentsToday,
+                appointmentsToday,   // ✅ agora reflecte correctamente os agendamentos de hoje
                 billingMonth: billingMonthVal,
                 pendingInvoices,
                 trends: {
                     clients: calcTrend(clientsCount, clientsLastMonth),
-                    appointments: calcTrendCount(appointmentsToday, appointmentsYesterday),
+                    appointments: calcTrend(appointmentsToday, appointmentsYesterday), // ✅ vs ontem
                     billing: calcTrend(billingMonthVal, billingLastMonthVal),
                     pendingInvoices: calcTrendCount(pendingInvoices, pendingInvoicesLastMonth),
                 },
@@ -154,6 +170,7 @@ router.get("/", authMiddleware, async (req, res) => {
                 { name: "Pendentes", total: pendingInvoices, color: "#f97316" },
             ],
 
+            // ✅ próximos agendamentos ordenados por data
             appointments: recentAppointments.map((a) => ({
                 id: a.id,
                 client: a.client,

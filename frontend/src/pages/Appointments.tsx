@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Calendar as CalendarIcon,
-  Clock,
   Plus,
   Filter,
   ChevronLeft,
@@ -16,10 +15,152 @@ import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import toast from "react-hot-toast";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
+import { useCurrency } from "../contexts/CurrencyContext";
 
 export const API_URL = "http://localhost:3001";
 
+const monthNames = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+// ─── Calendário em tempo real ────────────────────────────────────────────────
+function CalendarCard({ appointments }: { appointments: Appointment[] }) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  // Dias do mês com offset para começar na segunda-feira
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+
+    // 0=Dom → ajustar para 0=Seg
+    let startDay = firstDay.getDay();
+    startDay = startDay === 0 ? 6 : startDay - 1;
+
+    const days: (number | null)[] = [];
+    for (let i = 0; i < startDay; i++) days.push(null);
+    for (let d = 1; d <= daysInMonth; d++) days.push(d);
+
+    return days;
+  }, [month, year]);
+
+  // Conjunto de dias que têm agendamentos neste mês/ano
+  const daysWithAppointments = useMemo(() => {
+    const set = new Set<number>();
+    appointments.forEach((a) => {
+      const d = new Date(a.date);
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        set.add(d.getDate());
+      }
+    });
+    return set;
+  }, [appointments, year, month]);
+
+  const today = new Date();
+  const isToday = (day: number) =>
+    today.getFullYear() === year &&
+    today.getMonth() === month &&
+    today.getDate() === day;
+
+  return (
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm transition-colors">
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-gray-900 dark:text-white">
+          {monthNames[month]} {year}
+        </h3>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+
+      {/* Dias da semana */}
+      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        {["S", "T", "Q", "Q", "S", "S", "D"].map((d, i) => (
+          <span
+            key={i}
+            className="text-[10px] font-bold text-gray-400 dark:text-gray-500"
+          >
+            {d}
+          </span>
+        ))}
+      </div>
+
+      {/* Dias do mês */}
+      <div className="grid grid-cols-7 gap-1">
+        {calendarDays.map((day, i) => {
+          if (day === null) {
+            return <div key={`empty-${i}`} />;
+          }
+
+          const hasAppt = daysWithAppointments.has(day);
+          const todayDay = isToday(day);
+
+          return (
+            <div
+              key={day}
+              className={cn(
+                "aspect-square rounded-xl text-sm font-medium flex flex-col items-center justify-center relative transition-all",
+                todayDay
+                  ? "bg-primary text-white shadow-lg shadow-primary/20"
+                  : hasAppt
+                    ? "bg-primary/10 dark:bg-primary/20 text-primary font-bold"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800",
+              )}
+            >
+              {day}
+              {/* Ponto indicador de agendamento */}
+              {hasAppt && !todayDay && (
+                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-primary" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legenda */}
+      <div className="mt-4 flex items-center gap-3 text-[10px] text-gray-400 font-medium">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+          Hoje
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-primary/30 inline-block" />
+          Com agendamento
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Página principal ─────────────────────────────────────────────────────────
 export function Appointments() {
+  const { formatCurrency } = useCurrency();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -54,11 +195,9 @@ export function Appointments() {
     const headers = getAuthHeaders();
 
     Promise.all([
-      fetch(`${API_URL}/api/appointments`, { headers }).then((res) =>
-        res.json(),
-      ),
-      fetch(`${API_URL}/api/clients`, { headers }).then((res) => res.json()),
-      fetch(`${API_URL}/api/services`, { headers }).then((res) => res.json()),
+      fetch(`${API_URL}/api/appointments`, { headers }).then((r) => r.json()),
+      fetch(`${API_URL}/api/clients`, { headers }).then((r) => r.json()),
+      fetch(`${API_URL}/api/services`, { headers }).then((r) => r.json()),
     ])
       .then(([apptData, clientsData, servicesData]) => {
         setAppointments(Array.isArray(apptData) ? apptData : []);
@@ -80,9 +219,6 @@ export function Appointments() {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      const data = await res.json();
-      console.log("RESPONSE:", res.status, data); // ← adiciona isto
-
       if (res.ok) {
         setAppointments((prev) =>
           prev.map((a) =>
@@ -91,7 +227,7 @@ export function Appointments() {
         );
         toast.success(`Marcação ${newStatus.toLowerCase()}`);
       }
-    } catch (error) {
+    } catch {
       toast.error("Erro ao atualizar status");
     }
   };
@@ -108,38 +244,32 @@ export function Appointments() {
         },
       );
       if (res.ok) {
-        setAppointments(
-          appointments.filter((a) => a.id !== appointmentToDelete),
+        setAppointments((prev) =>
+          prev.filter((a) => a.id !== appointmentToDelete),
         );
         toast.success("Marcação eliminada");
         setAppointmentToDelete(null);
       }
-    } catch (error) {
+    } catch {
       toast.error("Erro ao eliminar marcação");
     } finally {
       setDeleting(false);
     }
   };
 
-  const filteredAppointments = appointments.filter((appt) =>
-    activeFilters.includes(appt.status),
+  const filteredAppointments = appointments.filter((a) =>
+    activeFilters.includes(a.status),
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.clientId) {
-      toast.error("Por favor, selecione um cliente");
-      return;
-    }
-    if (!formData.serviceId) {
-      toast.error("Por favor, selecione um serviço");
-      return;
-    }
-    if (!formData.date || !formData.time) {
-      toast.error("Por favor, preencha a data e a hora");
-      return;
-    }
+    if (!formData.clientId)
+      return toast.error("Por favor, selecione um cliente");
+    if (!formData.serviceId)
+      return toast.error("Por favor, selecione um serviço");
+    if (!formData.date || !formData.time)
+      return toast.error("Por favor, preencha a data e a hora");
 
     setSubmitting(true);
     try {
@@ -150,17 +280,16 @@ export function Appointments() {
       });
 
       if (res.ok) {
-        await new Promise((resolve) => setTimeout(resolve, 800));
         const data = await res.json();
         const newAppt = data.data || data;
 
-        setAppointments([
+        setAppointments((prev) => [
           {
             ...newAppt,
             client: clients.find((c) => c.id === formData.clientId),
             service: services.find((s) => s.id === formData.serviceId),
           },
-          ...appointments,
+          ...prev,
         ]);
 
         setIsModalOpen(false);
@@ -176,21 +305,10 @@ export function Appointments() {
         const data = await res.json();
         toast.error(data.message || "Erro ao marcar agendamento");
       }
-    } catch (error) {
+    } catch {
       toast.error("Erro ao marcar agendamento");
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Concluído":
-        return "bg-green-100 text-green-700";
-      case "Cancelado":
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-blue-100 text-blue-700";
     }
   };
 
@@ -215,49 +333,12 @@ export function Appointments() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Simple Calendar Sidebar */}
+        {/* Sidebar — Calendário real + Filtros */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm transition-colors">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900 dark:text-white">
-                Maio 2024
-              </h3>
-              <div className="flex gap-1">
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                  <ChevronLeft size={18} />
-                </button>
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center mb-2">
-              {["S", "T", "Q", "Q", "S", "S", "D"].map((d, i) => (
-                <span
-                  key={i}
-                  className="text-[10px] font-bold text-gray-400 dark:text-gray-500"
-                >
-                  {d}
-                </span>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: 31 }).map((_, i) => (
-                <button
-                  key={i}
-                  className={cn(
-                    "aspect-square rounded-xl text-sm font-medium flex items-center justify-center transition-all",
-                    i + 1 === 24
-                      ? "bg-primary text-white shadow-lg shadow-primary/20"
-                      : "hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300",
-                  )}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* ✅ Calendário com dados reais */}
+          <CalendarCard appointments={appointments} />
 
+          {/* Filtros */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm transition-colors">
             <h3 className="font-bold mb-4 text-gray-900 dark:text-white">
               Filtros
@@ -272,15 +353,13 @@ export function Appointments() {
                     type="checkbox"
                     className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-primary focus:ring-primary dark:bg-slate-800"
                     checked={activeFilters.includes(status)}
-                    onChange={() => {
-                      if (activeFilters.includes(status)) {
-                        setActiveFilters(
-                          activeFilters.filter((f) => f !== status),
-                        );
-                      } else {
-                        setActiveFilters([...activeFilters, status]);
-                      }
-                    }}
+                    onChange={() =>
+                      setActiveFilters((prev) =>
+                        prev.includes(status)
+                          ? prev.filter((f) => f !== status)
+                          : [...prev, status],
+                      )
+                    }
                   />
                   {status}
                 </label>
@@ -289,7 +368,7 @@ export function Appointments() {
           </div>
         </div>
 
-        {/* List View */}
+        {/* Lista de marcações */}
         <div className="lg:col-span-3 space-y-4">
           <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
             <h2 className="font-bold px-2 text-gray-900 dark:text-white">
@@ -316,16 +395,16 @@ export function Appointments() {
                   key={appt.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: index * 0.05 }}
                   className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 group"
                 >
                   <div className="flex items-center gap-6">
                     <div className="flex flex-col items-center justify-center w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-2xl group-hover:bg-primary/5 dark:group-hover:bg-primary/10 transition-colors">
                       <span className="text-sm font-bold text-gray-400 dark:text-gray-500 group-hover:text-primary/60">
-                        {appt.time.split(":")[0]}
+                        {appt.time?.split(":")[0]}
                       </span>
                       <span className="text-xl font-black text-gray-900 dark:text-white group-hover:text-primary transition-colors">
-                        {appt.time.split(":")[1]}
+                        {appt.time?.split(":")[1]}
                       </span>
                     </div>
                     <div>
@@ -334,6 +413,9 @@ export function Appointments() {
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5 transition-colors">
                         <Tag size={14} /> {appt.service?.name || "—"}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        {new Date(appt.date).toLocaleDateString("pt-PT")}
                       </p>
                     </div>
                   </div>
@@ -392,7 +474,7 @@ export function Appointments() {
         </div>
       </div>
 
-      {/* Appointment Creation Modal */}
+      {/* Modal de criação */}
       <AnimatePresence>
         {isModalOpen && (
           <>
@@ -467,7 +549,7 @@ export function Appointments() {
                         value={s.id}
                         className="dark:bg-slate-900"
                       >
-                        {s.name} ({s.price}€)
+                        {s.name} ({formatCurrency(s.price)})
                       </option>
                     ))}
                   </select>

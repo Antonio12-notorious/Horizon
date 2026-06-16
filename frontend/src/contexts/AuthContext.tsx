@@ -20,6 +20,8 @@ export interface User {
   status: UserStatus;
   department?: string;
   contact?: string;
+  phone?: string;
+  avatar?: string;
   mustChangePassword: boolean;
   lastLoginAt?: string;
   createdAt: string;

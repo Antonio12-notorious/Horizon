@@ -15,14 +15,16 @@ import {
   Filter,
 } from "lucide-react";
 import { Client, Appointment } from "../types";
-import { cn, formatCurrency } from "../lib/utils";
+import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import toast from "react-hot-toast";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
+import { useCurrency } from "../contexts/CurrencyContext";
 
 export const API_URL = "http://localhost:3001";
 
 export function Clients() {
+  const { formatCurrency } = useCurrency();
   const [clients, setClients] = useState<Client[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<any[]>([]);

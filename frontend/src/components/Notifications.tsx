@@ -23,6 +23,7 @@ export function Notifications() {
     const saved = localStorage.getItem('notifications_read');
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -44,14 +45,30 @@ export function Notifications() {
   }, [fetchNotifications]);
 
   const markAsRead = (id: string) => {
-    const updated = new Set(readIds).add(id);
-    setReadIds(updated);
-    localStorage.setItem('notifications_read', JSON.stringify([...updated]));
+    setRemovingIds((prev) => new Set([...prev, id]));
+    setTimeout(() => {
+      const updated = new Set(readIds).add(id);
+      setReadIds(updated);
+      localStorage.setItem('notifications_read', JSON.stringify([...updated]));
+      setRemovingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 200);
   };
 
   const removeNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    markAsRead(id);
+    setRemovingIds((prev) => new Set([...prev, id]));
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      markAsRead(id);
+      setRemovingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 200);
   };
 
   const clearAll = () => {
@@ -64,6 +81,7 @@ export function Notifications() {
 
   const isRead = (n: Notification) => readIds.has(n.id) || n.read;
   const unreadCount = notifications.filter((n) => !isRead(n)).length;
+  const unreadNotifications = notifications.filter((n) => !isRead(n));
 
   return (
     <div className="relative">
@@ -107,7 +125,7 @@ export function Notifications() {
                     Notificações
                   </h3>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-                    {unreadCount} não lidas
+                    {unreadCount} {unreadCount === 1 ? 'não lida' : 'não lidas'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -123,74 +141,75 @@ export function Notifications() {
               </div>
 
               <div className="max-h-[400px] overflow-y-auto">
-                {notifications.length > 0 ? (
-                  notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className={cn(
-                        "p-4 border-b border-gray-50 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors group relative",
-                        !isRead(n) && "bg-primary/5 dark:bg-primary/10",
-                      )}
-                    >
-                      <div className="flex gap-3">
-                        <div
-                          className={cn(
-                            "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0",
-                            n.type === "success"
-                              ? "bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-400"
-                              : n.type === "warning"
-                                ? "bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400"
-                                : "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
-                          )}
-                        >
-                          {n.type === "success" ? (
-                            <CheckCircle2 size={16} />
-                          ) : n.type === "warning" ? (
-                            <AlertCircle size={16} />
-                          ) : (
-                            <Clock size={16} />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0 pr-6">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
-                              {n.category}
-                            </span>
-                            {!isRead(n) && (
-                              <span className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
+                {unreadNotifications.length > 0 ? (
+                  <AnimatePresence mode="popLayout">
+                    {unreadNotifications.map((n) => (
+                      <motion.div
+                        key={n.id}
+                        initial={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 100 }}
+                        transition={{ duration: 0.2 }}
+                        className={cn(
+                          "p-4 border-b border-gray-50 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors group relative bg-primary/5 dark:bg-primary/10",
+                          removingIds.has(n.id) && "opacity-50",
+                        )}
+                      >
+                        <div className="flex gap-3">
+                          <div
+                            className={cn(
+                              "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0",
+                              n.type === "success"
+                                ? "bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-400"
+                                : n.type === "warning"
+                                  ? "bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400"
+                                  : "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+                            )}
+                          >
+                            {n.type === "success" ? (
+                              <CheckCircle2 size={16} />
+                            ) : n.type === "warning" ? (
+                              <AlertCircle size={16} />
+                            ) : (
+                              <Clock size={16} />
                             )}
                           </div>
-                          <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
-                            {n.title}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                            {n.description}
-                          </p>
-                          <p className="text-[10px] text-gray-400 mt-1.5 font-medium">
-                            {n.time}
-                          </p>
+                          <div className="flex-1 min-w-0 pr-6">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                                {n.category}
+                              </span>
+                              <span className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
+                            </div>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
+                              {n.title}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                              {n.description}
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-1.5 font-medium">
+                              {n.time}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {!isRead(n) && (
+                        <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => markAsRead(n.id)}
-                            className="p-1 text-primary hover:bg-white dark:hover:bg-slate-700 rounded-md"
+                            className="p-1 text-primary hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all active:scale-95"
                             title="Marcar como lida"
                           >
                             <CheckCircle2 size={13} />
                           </button>
-                        )}
-                        <button
-                          onClick={() => removeNotification(n.id)}
-                          className="p-1 text-red-400 hover:bg-white dark:hover:bg-slate-700 rounded-md"
-                          title="Remover"
-                        >
-                          <X size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                          <button
+                            onClick={() => removeNotification(n.id)}
+                            className="p-1 text-red-400 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all active:scale-95"
+                            title="Remover"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 ) : (
                   <div className="p-10 text-center">
                     <Bell
@@ -198,7 +217,7 @@ export function Notifications() {
                       size={32}
                     />
                     <p className="text-sm font-bold text-gray-400">
-                      Sem notificações
+                      Sem notificações não lidas
                     </p>
                   </div>
                 )}

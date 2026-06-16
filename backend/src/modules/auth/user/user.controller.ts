@@ -81,3 +81,17 @@ export async function getSecurityLogs(req: AuthRequest, res: Response) {
     const logs = await userService.getSecurityLogs(limit);
     res.json({ logs });
 }
+
+// ─── Perfil do Utilizador (atualizar próprio perfil) ────────────────────────
+
+export async function updateProfile(req: AuthRequest & ValidatedRequest, res: Response) {
+    const user = await userService.updateProfile(req.user.id, req.validatedData);
+    res.json({ message: "Perfil actualizado com sucesso", user });
+}
+
+// ─── Obter Perfil do Utilizador ──────────────────────────────────────────────
+
+export async function getProfile(req: AuthRequest, res: Response) {
+    const user = await userService.getProfile(req.user.id);
+    res.json({ user });
+}
