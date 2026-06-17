@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Notifications } from "./Notifications";
-// import { GlobalSearch } from "./GlobalSearch";
+import { GlobalSearch } from "./GlobalSearch";
 import { useAuth } from "../contexts/AuthContext";
 import {
   ShieldCheck,
@@ -56,7 +56,7 @@ export function TopBar() {
 
       {/* Pesquisa global — desktop: barra expandida | mobile: ícone de lupa */}
       <div className="hidden lg:flex items-center flex-1 justify-center px-4 lg:px-8">
-        {/* <GlobalSearch /> */}
+        <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-3 lg:gap-6 flex-shrink-0">

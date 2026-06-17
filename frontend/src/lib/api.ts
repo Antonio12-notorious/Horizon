@@ -1,7 +1,8 @@
-// src/lib/api.ts
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
 export const authFetch = (url: string, options: RequestInit = {}) => {
     const token = localStorage.getItem('token');
-    return fetch(url, {
+    return fetch(`${API_BASE}${url}`, {
         ...options,
         headers: {
             'Content-Type': 'application/json',
