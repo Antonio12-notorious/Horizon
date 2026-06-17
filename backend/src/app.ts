@@ -15,6 +15,12 @@ import searchRoutes from "./modules/search/Search.routes";
 
 const app = express();
 app.use(cors(config.cors));
+app.use(cors ({
+    origin:[
+        'http://localhost:5173',
+        'https://horizonlac.vercel.app'
+    ]
+}))
 app.use(express.json());
 app.set("etag", false);
 
