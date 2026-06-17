@@ -76,14 +76,14 @@ export function Dashboard() {
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-center mb-8">
         <h2 className="text-2xl font-black text-gray-900 dark:text-white transition-colors tracking-tight">
           Dashboard
         </h2>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           icon={<Users className="text-indigo-600" />}
           label="Clientes"

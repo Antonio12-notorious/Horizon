@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
-import { Notifications } from './Notifications';
-import { useAuth } from '../contexts/AuthContext';
-import { ShieldCheck, Shield, ShieldAlert, User, LogOut, Settings as SettingsIcon, Key } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { Notifications } from "./Notifications";
+// import { GlobalSearch } from "./GlobalSearch";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  ShieldCheck,
+  Shield,
+  ShieldAlert,
+  User,
+  LogOut,
+  Settings as SettingsIcon,
+  Key,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { useNavigate } from "react-router-dom";
 
 export function TopBar() {
   const { role, user, logout } = useAuth();
@@ -12,15 +21,43 @@ export function TopBar() {
 
   const getRoleBadge = () => {
     switch (role) {
-      case 'Admin':       return <span className="bg-red-500/20 text-red-300 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-1.5"><ShieldCheck size={12} /> Admin</span>;
-      case 'Utilizador':  return <span className="bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-500/20 flex items-center gap-1.5"><Shield size={12} /> Staff</span>;
-      case 'Visualizador':return <span className="bg-white/10 text-gray-300 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 flex items-center gap-1.5"><ShieldAlert size={12} /> Visitante</span>;
+      case "Admin":
+        return (
+          <span className="bg-red-500/20 text-red-300 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-1.5">
+            <ShieldCheck size={12} /> Admin
+          </span>
+        );
+      case "Utilizador":
+        return (
+          <span className="bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-500/20 flex items-center gap-1.5">
+            <Shield size={12} /> Staff
+          </span>
+        );
+      case "Visualizador":
+        return (
+          <span className="bg-white/10 text-gray-300 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 flex items-center gap-1.5">
+            <ShieldAlert size={12} /> Visitante
+          </span>
+        );
     }
   };
 
   return (
-    <header className="h-20 border-b border-white/10 bg-sidebar backdrop-blur-md sticky top-0 z-30 px-4 lg:px-8 pl-16 lg:pl-8 flex items-center justify-between transition-colors">
-      <div className="flex items-center gap-2 lg:gap-4 flex-1" />
+    <header className="h-20 border-b border-white/10 bg-sidebar backdrop-blur-md sticky top-0 z-30 px-4 lg:px-8 flex items-center justify-between transition-colors">
+      {/* Logo mobile — idêntico ao da Sidebar, visível só em mobile */}
+      <div className="flex items-center gap-2.5 lg:hidden flex-shrink-0">
+        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
+          <span className="font-bold text-white text-xl leading-none">H</span>
+        </div>
+        <span className="text-white font-semibold text-lg tracking-tight">
+          Horizon
+        </span>
+      </div>
+
+      {/* Pesquisa global — desktop: barra expandida | mobile: ícone de lupa */}
+      <div className="hidden lg:flex items-center flex-1 justify-center px-4 lg:px-8">
+        {/* <GlobalSearch /> */}
+      </div>
 
       <div className="flex items-center gap-3 lg:gap-6 flex-shrink-0">
         <Notifications />
@@ -30,7 +67,7 @@ export function TopBar() {
         <div className="flex items-center gap-3 pl-2 relative">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-black text-white tracking-tight leading-none mb-1">
-              {user?.name || 'Admin User'}
+              {user?.name || "Admin User"}
             </p>
             {getRoleBadge()}
           </div>
@@ -40,9 +77,16 @@ export function TopBar() {
             className="w-11 h-11 bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center text-gray-300 group hover:bg-primary/20 hover:border-primary/30 transition-all overflow-hidden z-[31] relative shadow-sm"
           >
             {user?.avatar ? (
-              <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="w-full h-full object-cover"
+              />
             ) : (
-              <User size={22} className="group-hover:text-primary transition-colors" />
+              <User
+                size={22}
+                className="group-hover:text-primary transition-colors"
+              />
             )}
           </button>
 
@@ -66,14 +110,18 @@ export function TopBar() {
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-primary shadow-md border border-gray-100 dark:border-slate-700 overflow-hidden">
                         {user?.avatar ? (
-                          <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                          <img
+                            src={user.avatar}
+                            alt={user.name}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <User size={24} />
                         )}
                       </div>
                       <div className="min-w-0">
                         <p className="font-black text-gray-900 dark:text-white text-base truncate leading-tight">
-                          {user?.name || 'Utilizador'}
+                          {user?.name || "Utilizador"}
                         </p>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest truncate mt-0.5">
                           {role}
@@ -84,21 +132,30 @@ export function TopBar() {
 
                   <div className="p-2">
                     <button
-                      onClick={() => { navigate('/profile'); setIsMenuOpen(false); }}
+                      onClick={() => {
+                        navigate("/profile");
+                        setIsMenuOpen(false);
+                      }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all text-left"
                     >
                       <User size={18} className="text-gray-400" />
                       Ver perfil
                     </button>
                     <button
-                      onClick={() => { navigate('/settings'); setIsMenuOpen(false); }}
+                      onClick={() => {
+                        navigate("/settings");
+                        setIsMenuOpen(false);
+                      }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all text-left"
                     >
                       <SettingsIcon size={18} className="text-gray-400" />
                       Configurações
                     </button>
                     <button
-                      onClick={() => { navigate('/settings?tab=security'); setIsMenuOpen(false); }}
+                      onClick={() => {
+                        navigate("/settings?tab=security");
+                        setIsMenuOpen(false);
+                      }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all text-left"
                     >
                       <Key size={18} className="text-gray-400" />

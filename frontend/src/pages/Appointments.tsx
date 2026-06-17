@@ -314,21 +314,21 @@ export function Appointments() {
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 text-gray-900 dark:text-gray-100 transition-colors">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
-            Agenda & Agendamentos
+      <header className="flex flex-row items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white transition-colors truncate">
+            Agendamento
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium transition-colors">
-            Controle as suas marcações e horários
+          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium transition-colors truncate">
+            Controlo total de agendamentos e horarios
           </p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
+          className="flex-shrink-0 flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-95"
         >
           <Plus size={20} />
-          Novo Agendamento
+          <span className="hidden sm:inline">Novo Agendamento</span>
         </button>
       </header>
 

@@ -1,271 +1,497 @@
-// import React, { useState, useEffect, useCallback } from 'react';
-// import { Search, X, User, Briefcase, FileText, Calendar, ArrowRight, Command, Clock, History } from 'lucide-react';
+// import React, { useState, useEffect, useCallback, useRef } from 'react';
+// import {
+//   Search, X, User, Briefcase, FileText, Calendar,
+//   CreditCard, ArrowRight, Command, Clock, History,
+//   LayoutDashboard, ChevronRight,
+// } from 'lucide-react';
 // import { motion, AnimatePresence } from 'motion/react';
 // import { useNavigate } from 'react-router-dom';
 // import { cn } from '../lib/utils';
 
+// // ─── Tipos ────────────────────────────────────────────────────────────────────
+
+// type ResultType = 'client' | 'service' | 'invoice' | 'appointment' | 'payment';
+
 // interface SearchResult {
 //   id: string;
-//   type: 'client' | 'service' | 'invoice' | 'appointment';
+//   type: ResultType;
 //   title: string;
 //   subtitle: string;
-//   path: string;
+//   meta?: string;       // ex: estado da fatura, valor, data
+//   path: string;        // deep link directo ao registo
 // }
 
-// const RECENT_SEARCHES_KEY = 'minierp_recent_searches';
+// // ─── Configuração por tipo ────────────────────────────────────────────────────
+
+// const TYPE_CONFIG: Record<ResultType, {
+//   label: string;
+//   icon: React.ReactNode;
+//   badgeCls: string;
+//   groupLabel: string;
+// }> = {
+//   client: {
+//     label: 'Cliente',
+//     icon: <User size={18} className="text-blue-400" />,
+//     badgeCls: 'bg-blue-500/10 text-blue-400 dark:bg-blue-500/20 dark:text-blue-300',
+//     groupLabel: 'Clientes',
+//   },
+//   service: {
+//     label: 'Serviço',
+//     icon: <Briefcase size={18} className="text-emerald-400" />,
+//     badgeCls: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300',
+//     groupLabel: 'Serviços',
+//   },
+//   invoice: {
+//     label: 'Fatura',
+//     icon: <FileText size={18} className="text-orange-400" />,
+//     badgeCls: 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-300',
+//     groupLabel: 'Faturas',
+//   },
+//   appointment: {
+//     label: 'Agendamento',
+//     icon: <Calendar size={18} className="text-purple-400" />,
+//     badgeCls: 'bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-300',
+//     groupLabel: 'Agendamentos',
+//   },
+//   payment: {
+//     label: 'Pagamento',
+//     icon: <CreditCard size={18} className="text-teal-400" />,
+//     badgeCls: 'bg-teal-500/10 text-teal-600 dark:bg-teal-500/20 dark:text-teal-300',
+//     groupLabel: 'Pagamentos',
+//   },
+// };
+
+// // ─── Atalhos rápidos (estado vazio) ───────────────────────────────────────────
+
+// const QUICK_LINKS = [
+//   { label: 'Dashboard',     path: '/',             icon: <LayoutDashboard size={15} /> },
+//   { label: 'Clientes',      path: '/clients',      icon: <User size={15} /> },
+//   { label: 'Agendamentos',  path: '/appointments', icon: <Calendar size={15} /> },
+//   { label: 'Faturas',       path: '/invoices',     icon: <FileText size={15} /> },
+//   { label: 'Pagamentos',    path: '/payments',     icon: <CreditCard size={15} /> },
+//   { label: 'Serviços',      path: '/services',     icon: <Briefcase size={15} /> },
+// ];
+
+// // ─── Histórico ────────────────────────────────────────────────────────────────
+
+// const HISTORY_KEY = 'horizon_search_history';
+
+// function loadHistory(): string[] {
+//   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+//   catch { return []; }
+// }
+// function saveHistory(terms: string[]) {
+//   localStorage.setItem(HISTORY_KEY, JSON.stringify(terms));
+// }
+
+// // ─── Pesquisa (endpoint único) ────────────────────────────────────────────────
+
+// async function fetchResults(q: string): Promise<SearchResult[]> {
+//   // Endpoint único — o backend filtra todos os modelos
+//   // GET /api/search?q=texto&limit=10
+//   // Resposta esperada: { results: SearchResult[] }
+//   //
+//   // Fallback: se o endpoint não existir ainda, faz 4 chamadas individuais
+//   // e constrói os deep links correctos.
+
+//   try {
+//     const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=10`, {
+//       cache: "no-store",
+//     });
+//     if (!res.ok) throw new Error('search-endpoint-unavailable');
+//     const data = await res.json();
+//     return (data.results ?? data) as SearchResult[];
+//   } catch {
+//     // ── Fallback multi-fetch ──────────────────────────────────────────────
+//     const [clients, services, invoices, appointments, payments] = await Promise.all([
+//       fetch('/api/clients').then(r => r.ok ? r.json() : []).catch(() => []),
+//       fetch('/api/services').then(r => r.ok ? r.json() : []).catch(() => []),
+//       fetch('/api/invoices').then(r => r.ok ? r.json() : []).catch(() => []),
+//       fetch('/api/appointments').then(r => r.ok ? r.json() : []).catch(() => []),
+//       fetch('/api/payments').then(r => r.ok ? r.json() : []).catch(() => []),
+//     ]);
+
+//     const q_lower = q.toLowerCase();
+//     const match = (val?: string) => val?.toLowerCase().includes(q_lower) ?? false;
+
+//     const results: SearchResult[] = [
+//       ...clients
+//         .filter((c: any) => match(c.name) || match(c.email) || match(c.phone) || match(c.nif))
+//         .map((c: any): SearchResult => ({
+//           id: c.id, type: 'client',
+//           title: c.name,
+//           subtitle: c.email ?? c.phone ?? '—',
+//           meta: c.nif ? `NIF ${c.nif}` : undefined,
+//           path: `/clients/${c.id}`,
+//         })),
+
+//       ...services
+//         .filter((s: any) => match(s.name) || match(s.description) || match(s.category))
+//         .map((s: any): SearchResult => ({
+//           id: s.id, type: 'service',
+//           title: s.name,
+//           subtitle: s.category ?? s.description ?? '—',
+//           meta: s.price != null ? `${Number(s.price).toFixed(2)} MT` : undefined,
+//           path: `/services/${s.id}`,
+//         })),
+
+//       ...invoices
+//         .filter((i: any) => match(i.id) || match(i.number) || match(i.clientName) || match(i.status))
+//         .map((i: any): SearchResult => ({
+//           id: i.id, type: 'invoice',
+//           title: `Fatura ${i.number ?? '#' + i.id}`,
+//           subtitle: i.clientName ?? '—',
+//           meta: i.status ?? undefined,
+//           path: `/invoices/${i.id}`,
+//         })),
+
+//       ...appointments
+//         .filter((a: any) => match(a.client?.name) || match(a.service?.name) || match(a.notes))
+//         .map((a: any): SearchResult => ({
+//           id: a.id, type: 'appointment',
+//           title: a.client?.name ?? 'Cliente',
+//           subtitle: a.service?.name ?? '—',
+//           meta: a.date ? new Date(a.date).toLocaleDateString('pt-MZ') : undefined,
+//           path: `/appointments/${a.id}`,
+//         })),
+
+//       ...payments
+//         .filter((p: any) => match(p.reference) || match(p.clientName) || match(p.method))
+//         .map((p: any): SearchResult => ({
+//           id: p.id, type: 'payment',
+//           title: p.clientName ?? `Pagamento ${p.reference ?? p.id}`,
+//           subtitle: p.method ?? '—',
+//           meta: p.amount != null ? `${Number(p.amount).toFixed(2)} MT` : undefined,
+//           path: `/payments/${p.id}`,
+//         })),
+//     ];
+
+//     return results.slice(0, 10);
+//   }
+// }
+
+// // ─── Agrupar resultados por tipo ──────────────────────────────────────────────
+
+// function groupResults(results: SearchResult[]): [ResultType, SearchResult[]][] {
+//   const map = new Map<ResultType, SearchResult[]>();
+//   for (const r of results) {
+//     if (!map.has(r.type)) map.set(r.type, []);
+//     map.get(r.type)!.push(r);
+//   }
+//   return Array.from(map.entries());
+// }
+
+// // ─── Componente principal ─────────────────────────────────────────────────────
 
 // export function GlobalSearch() {
 //   const [isOpen, setIsOpen] = useState(false);
 //   const [query, setQuery] = useState('');
 //   const [results, setResults] = useState<SearchResult[]>([]);
 //   const [loading, setLoading] = useState(false);
-//   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+//   const [history, setHistory] = useState<string[]>(loadHistory);
+//   const [activeIdx, setActiveIdx] = useState(-1);
+
+//   const inputRef = useRef<HTMLInputElement>(null);
+//   const listRef = useRef<HTMLDivElement>(null);
 //   const navigate = useNavigate();
 
-//   // Load history on mount
-//   useEffect(() => {
-//     const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
-//     if (saved) {
-//       try {
-//         setRecentSearches(JSON.parse(saved));
-//       } catch (e) {
-//         console.error('Failed to load search history');
-//       }
-//     }
-//   }, []);
+//   // ── Fechar / abrir ──────────────────────────────────────────────────────────
 
-//   const addToHistory = useCallback((term: string) => {
+//   const open = () => { setIsOpen(true); setQuery(''); setResults([]); setActiveIdx(-1); };
+//   const close = () => { setIsOpen(false); setQuery(''); setResults([]); setActiveIdx(-1); };
+
+//   // ── Histórico ───────────────────────────────────────────────────────────────
+
+//   const pushHistory = useCallback((term: string) => {
 //     if (!term || term.trim().length < 2) return;
-    
-//     setRecentSearches(prev => {
-//       const filtered = prev.filter(s => s !== term);
-//       const updated = [term, ...filtered].slice(0, 5);
-//       localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
-//       return updated;
+//     setHistory(prev => {
+//       const next = [term, ...prev.filter(s => s !== term)].slice(0, 6);
+//       saveHistory(next);
+//       return next;
 //     });
 //   }, []);
 
-//   const clearHistory = () => {
-//     setRecentSearches([]);
-//     localStorage.removeItem(RECENT_SEARCHES_KEY);
+//   const clearHistory = () => { setHistory([]); localStorage.removeItem(HISTORY_KEY); };
+
+//   // ── Pesquisa com debounce ────────────────────────────────────────────────────
+
+//   useEffect(() => {
+//     if (query.length < 2) { setResults([]); setActiveIdx(-1); return; }
+//     setLoading(true);
+//     const t = setTimeout(async () => {
+//       try {
+//         const r = await fetchResults(query);
+//         setResults(r);
+//         setActiveIdx(-1);
+//       } catch { setResults([]); }
+//       finally { setLoading(false); }
+//     }, 280);
+//     return () => clearTimeout(t);
+//   }, [query]);
+
+//   // ── Atalhos de teclado globais ───────────────────────────────────────────────
+
+//   useEffect(() => {
+//     const handler = (e: KeyboardEvent) => {
+//       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); open(); }
+//       if (e.key === 'Escape' && isOpen) close();
+//     };
+//     window.addEventListener('keydown', handler);
+//     return () => window.removeEventListener('keydown', handler);
+//   }, [isOpen]);
+
+//   // ── Navegação ↑↓ Enter ───────────────────────────────────────────────────────
+
+//   const flatResults = results;
+//   const maxIdx = flatResults.length - 1;
+
+//   const handleKeyDown = (e: React.KeyboardEvent) => {
+//     if (e.key === 'ArrowDown') {
+//       e.preventDefault();
+//       setActiveIdx(i => Math.min(i + 1, maxIdx));
+//     } else if (e.key === 'ArrowUp') {
+//       e.preventDefault();
+//       setActiveIdx(i => Math.max(i - 1, -1));
+//     } else if (e.key === 'Enter') {
+//       if (activeIdx >= 0 && flatResults[activeIdx]) {
+//         selectResult(flatResults[activeIdx]);
+//       } else if (query.trim().length >= 2) {
+//         pushHistory(query.trim());
+//       }
+//     }
 //   };
 
-//   const handleSearch = useCallback(async (text: string) => {
-//     if (text.length < 2) {
-//       setResults([]);
-//       return;
-//     }
-
-//     setLoading(true);
-//     try {
-//       // In a real app, this would be a single API call like GET /api/search?q=...
-//       const [clients, services, invoices, appointments] = await Promise.all([
-//         fetch('/api/clients').then(res => res.json()),
-//         fetch('/api/services').then(res => res.json()),
-//         fetch('/api/invoices').then(res => res.json()),
-//         fetch('/api/appointments').then(res => res.json()),
-//       ]);
-
-//       const filtered: SearchResult[] = [
-//         ...clients.filter((c: any) => c.name.toLowerCase().includes(text.toLowerCase()) || (c.email && c.email.toLowerCase().includes(text.toLowerCase())))
-//           .map((c: any) => ({ id: c.id, type: 'client', title: c.name, subtitle: c.email || 'Sem email', path: '/clients' })),
-        
-//         ...services.filter((s: any) => s.name.toLowerCase().includes(text.toLowerCase()) || (s.description && s.description.toLowerCase().includes(text.toLowerCase())))
-//           .map((s: any) => ({ id: s.id, type: 'service', title: s.name, subtitle: `€${s.price}`, path: '/services' })),
-
-//         ...invoices.filter((i: any) => i.id.toLowerCase().includes(text.toLowerCase()) || (i.clientName && i.clientName.toLowerCase().includes(text.toLowerCase())))
-//           .map((i: any) => ({ id: i.id, type: 'invoice', title: `Fatura #${i.id}`, subtitle: i.clientName || 'Cliente desconhecido', path: '/invoices' })),
-
-//         ...appointments.filter((a: any) => (a.client?.name && a.client.name.toLowerCase().includes(text.toLowerCase())) || (a.service?.name && a.service.name.toLowerCase().includes(text.toLowerCase())))
-//           .map((a: any) => ({ id: a.id, type: 'appointment', title: a.client?.name || 'Cliente', subtitle: a.service?.name || 'Serviço', path: '/appointments' })),
-//       ].slice(0, 8);
-
-//       setResults(filtered);
-//     } catch (error) {
-//       console.error('Search error:', error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }, []);
-
+//   // Scroll automático para o item activo
 //   useEffect(() => {
-//     const timer = setTimeout(() => handleSearch(query), 300);
-//     return () => clearTimeout(timer);
-//   }, [query, handleSearch]);
+//     if (activeIdx < 0 || !listRef.current) return;
+//     const el = listRef.current.querySelector(`[data-idx="${activeIdx}"]`) as HTMLElement;
+//     el?.scrollIntoView({ block: 'nearest' });
+//   }, [activeIdx]);
 
-//   useEffect(() => {
-//     const handleKeyDown = (e: KeyboardEvent) => {
-//       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-//         e.preventDefault();
-//         setIsOpen(true);
-//       }
-//       if (e.key === 'Escape') {
-//         setIsOpen(false);
-//       }
-//       if (e.key === 'Enter' && query.trim().length >= 2 && !loading) {
-//         addToHistory(query);
-//       }
-//     };
-//     window.addEventListener('keydown', handleKeyDown);
-//     return () => window.removeEventListener('keydown', handleKeyDown);
-//   }, [query, loading, addToHistory]);
+//   // ── Seleccionar resultado ────────────────────────────────────────────────────
 
 //   const selectResult = (result: SearchResult) => {
-//     addToHistory(query || result.title);
+//     pushHistory(query || result.title);
 //     navigate(result.path);
-//     setIsOpen(false);
+//     close();
 //   };
 
-//   const getIcon = (type: string) => {
-//     switch (type) {
-//       case 'client': return <User className="text-blue-500" size={18} />;
-//       case 'service': return <Briefcase className="text-emerald-500" size={18} />;
-//       case 'invoice': return <FileText className="text-orange-500" size={18} />;
-//       case 'appointment': return <Calendar className="text-purple-500" size={18} />;
-//       default: return <Search size={18} />;
-//     }
-//   };
+//   const selectQuickLink = (path: string) => { navigate(path); close(); };
 
-//   const getBadge = (type: string) => {
-//     switch (type) {
-//       case 'client': return <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider">Cliente</span>;
-//       case 'service': return <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider">Serviço</span>;
-//       case 'invoice': return <span className="bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider">Fatura</span>;
-//       case 'appointment': return <span className="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider">Marcação</span>;
-//       default: return null;
-//     }
-//   };
+//   // ── Render ───────────────────────────────────────────────────────────────────
+
+//   const grouped = groupResults(results);
+
+//   // índice global por grupo para o activeIdx funcionar
+//   let globalIdx = 0;
 
 //   return (
 //     <>
-//       <button 
-//         onClick={() => setIsOpen(true)}
-//         className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-gray-100/50 hover:bg-gray-100 text-gray-400 rounded-2xl transition-all w-64 group truncate"
+//       {/* ── Trigger desktop ── */}
+//       <button
+//         onClick={open}
+//         className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 rounded-2xl transition-all w-64 group"
 //       >
-//         <Search size={18} className="group-hover:text-primary transition-colors flex-shrink-0" />
-//         <span className="text-sm font-medium mr-auto hidden md:inline">Pesquisar em tudo...</span>
-//         <div className="hidden md:flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-200 text-[10px] font-black">
-//           <Command size={10} />
-//           <span>K</span>
+//         <Search size={16} className="group-hover:text-primary transition-colors flex-shrink-0" />
+//         <span className="text-sm font-medium mr-auto text-gray-500">Pesquisar...</span>
+//         <div className="flex items-center gap-0.5 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md">
+//           <Command size={10} className="text-gray-500" />
+//           <span className="text-[10px] font-bold text-gray-500">K</span>
 //         </div>
 //       </button>
 
+//       {/* ── Trigger mobile (ícone) ── */}
+//       <button
+//         onClick={open}
+//         className="md:hidden flex items-center justify-end gap-3 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 rounded-2xl transition-all w-34 group"
+//         aria-label="Abrir pesquisa"
+//       >
+//         <Search size={18} />
+//         <span className="text-sm font-medium mr-auto text-gray-500">Pesquisar...</span>
+
+//       </button>
+
+//       {/* ── Modal ── */}
 //       <AnimatePresence>
 //         {isOpen && (
 //           <>
-//             <motion.div 
+//             {/* Overlay */}
+//             <motion.div
+//               key="overlay"
 //               initial={{ opacity: 0 }}
 //               animate={{ opacity: 1 }}
 //               exit={{ opacity: 0 }}
-//               onClick={() => setIsOpen(false)}
-//               className="fixed inset-0 bg-black/60 z-[60] backdrop-blur-md"
+//               transition={{ duration: 0.18 }}
+//               onClick={close}
+//               className="fixed inset-0 bg-black/70 z-[60] backdrop-blur-sm"
 //             />
+
+//             {/* Painel */}
 //             <motion.div
-//               initial={{ opacity: 0, scale: 0.95, y: 20 }}
+//               key="panel"
+//               initial={{ opacity: 0, scale: 0.97, y: -12 }}
 //               animate={{ opacity: 1, scale: 1, y: 0 }}
-//               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-//               className="fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl z-[61] overflow-hidden border border-white/20 transition-colors"
+//               exit={{ opacity: 0, scale: 0.97, y: -12 }}
+//               transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+//               className="fixed top-[8%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl z-[61] overflow-hidden border border-gray-100 dark:border-slate-800"
 //             >
-//               <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center gap-4">
-//                 <Search size={24} className="text-primary" />
-//                 <input 
+//               {/* Input */}
+//               <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+//                 <Search size={20} className={cn('flex-shrink-0 transition-colors', loading ? 'text-primary animate-pulse' : 'text-gray-400 dark:text-gray-500')} />
+//                 <input
+//                   ref={inputRef}
 //                   autoFocus
-//                   type="text" 
-//                   placeholder="Pesquisar por clientes, serviços, faturas..."
-//                   className="w-full text-xl font-bold focus:outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600 bg-transparent dark:text-white"
+//                   type="text"
+//                   placeholder="Pesquisar clientes, faturas, serviços..."
+//                   className="flex-1 text-base font-medium focus:outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600 bg-transparent text-gray-900 dark:text-white"
 //                   value={query}
-//                   onChange={(e) => setQuery(e.target.value)}
-//                   onKeyDown={(e) => {
-//                     if (e.key === 'Enter' && query.trim().length >= 2) {
-//                       addToHistory(query);
-//                     }
-//                   }}
+//                   onChange={e => setQuery(e.target.value)}
+//                   onKeyDown={handleKeyDown}
 //                 />
-//                 <button 
-//                   onClick={() => setIsOpen(false)}
-//                   className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-//                 >
-//                   <X size={20} />
+//                 {query && (
+//                   <button onClick={() => { setQuery(''); setResults([]); inputRef.current?.focus(); }} className="p-1 text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 transition-colors">
+//                     <X size={16} />
+//                   </button>
+//                 )}
+//                 <button onClick={close} className="p-1.5 text-gray-300 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400 transition-colors ml-1">
+//                   <X size={18} />
 //                 </button>
 //               </div>
 
-//               <div className="max-h-[480px] overflow-y-auto p-4 custom-scrollbar">
-//                 {loading ? (
-//                   <div className="p-12 text-center">
-//                     <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-//                     <p className="text-sm font-bold text-gray-400 dark:text-gray-500">A procurar em todos os módulos...</p>
+//               {/* Corpo */}
+//               <div ref={listRef} className="max-h-[60vh] overflow-y-auto overscroll-contain">
+
+//                 {/* Loading */}
+//                 {loading && (
+//                   <div className="flex items-center gap-3 px-6 py-5 text-sm text-gray-400 dark:text-gray-500">
+//                     <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin flex-shrink-0" />
+//                     A procurar em todos os módulos...
 //                   </div>
-//                 ) : results.length > 0 ? (
-//                   <div className="space-y-2">
-//                     {results.map((result) => (
-//                       <button
-//                         key={`${result.type}-${result.id}`}
-//                         onClick={() => selectResult(result)}
-//                         className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-3xl transition-all group text-left"
-//                       >
-//                         <div className="w-12 h-12 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-lg transition-all">
-//                           {getIcon(result.type)}
-//                         </div>
-//                         <div className="flex-1">
-//                           <div className="flex items-center gap-2 mb-0.5">
-//                             <h4 className="font-black text-gray-900 dark:text-white tracking-tight">{result.title}</h4>
-//                             {getBadge(result.type)}
+//                 )}
+
+//                 {/* Resultados agrupados */}
+//                 {!loading && results.length > 0 && (
+//                   <div className="p-3">
+//                     {grouped.map(([type, items]) => {
+//                       const cfg = TYPE_CONFIG[type];
+//                       return (
+//                         <div key={type} className="mb-2">
+//                           {/* Cabeçalho do grupo */}
+//                           <div className="flex items-center gap-2 px-3 py-1.5">
+//                             <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em]">{cfg.groupLabel}</span>
+//                             <div className="flex-1 h-px bg-gray-100 dark:bg-slate-800" />
 //                           </div>
-//                           <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{result.subtitle}</p>
+
+//                           {items.map(result => {
+//                             const idx = globalIdx++;
+//                             const isActive = idx === activeIdx;
+//                             return (
+//                               <button
+//                                 key={`${result.type}-${result.id}`}
+//                                 data-idx={idx}
+//                                 onClick={() => selectResult(result)}
+//                                 onMouseEnter={() => setActiveIdx(idx)}
+//                                 className={cn(
+//                                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all text-left group',
+//                                   isActive
+//                                     ? 'bg-primary/5 dark:bg-primary/10'
+//                                     : 'hover:bg-gray-50 dark:hover:bg-slate-800'
+//                                 )}
+//                               >
+//                                 {/* Ícone */}
+//                                 <div className={cn(
+//                                   'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all',
+//                                   isActive ? 'bg-primary/10 dark:bg-primary/20' : 'bg-gray-100 dark:bg-slate-800'
+//                                 )}>
+//                                   {cfg.icon}
+//                                 </div>
+
+//                                 {/* Texto */}
+//                                 <div className="flex-1 min-w-0">
+//                                   <div className="flex items-center gap-2 flex-wrap">
+//                                     <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{result.title}</span>
+//                                     <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wide flex-shrink-0', cfg.badgeCls)}>
+//                                       {cfg.label}
+//                                     </span>
+//                                   </div>
+//                                   <div className="flex items-center gap-2 mt-0.5">
+//                                     <span className="text-xs text-gray-400 dark:text-gray-500 truncate">{result.subtitle}</span>
+//                                     {result.meta && (
+//                                       <>
+//                                         <span className="text-gray-200 dark:text-gray-700">·</span>
+//                                         <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{result.meta}</span>
+//                                       </>
+//                                     )}
+//                                   </div>
+//                                 </div>
+
+//                                 {/* Seta */}
+//                                 <ChevronRight size={15} className={cn('flex-shrink-0 transition-colors', isActive ? 'text-primary' : 'text-gray-200 dark:text-gray-700')} />
+//                               </button>
+//                             );
+//                           })}
 //                         </div>
-//                         <ArrowRight size={18} className="text-gray-200 dark:text-gray-800 group-hover:text-primary transition-colors pr-2" />
-//                       </button>
-//                     ))}
+//                       );
+//                     })}
 //                   </div>
-//                 ) : query.length > 1 ? (
-//                   <div className="p-12 text-center">
-//                     <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 text-gray-200 dark:text-slate-700 rounded-3xl flex items-center justify-center mx-auto mb-4">
-//                       <Search size={32} />
+//                 )}
+
+//                 {/* Sem resultados */}
+//                 {!loading && query.length >= 2 && results.length === 0 && (
+//                   <div className="py-14 text-center px-6">
+//                     <div className="w-14 h-14 bg-gray-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+//                       <Search size={26} className="text-gray-200 dark:text-slate-600" />
 //                     </div>
-//                     <p className="text-lg font-black text-gray-900 dark:text-white tracking-tight">Nenhum resultado encontrado</p>
-//                     <p className="text-gray-400 dark:text-gray-500 text-sm font-medium mt-1">Tente pesquisar por outros termos</p>
+//                     <p className="font-semibold text-gray-900 dark:text-white mb-1">Nenhum resultado para "{query}"</p>
+//                     <p className="text-sm text-gray-400 dark:text-gray-500">Tenta outros termos — nome, email, número de fatura...</p>
 //                   </div>
-//                 ) : (
-//                   <div className="p-4 space-y-8">
-//                     {recentSearches.length > 0 && (
+//                 )}
+
+//                 {/* Estado vazio: histórico + atalhos rápidos */}
+//                 {!loading && query.length < 2 && (
+//                   <div className="p-4 space-y-5">
+
+//                     {/* Histórico */}
+//                     {history.length > 0 && (
 //                       <section>
-//                         <div className="flex items-center justify-between px-4 mb-4">
-//                           <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
-//                             <Clock size={12} /> Pesquisas Recentes
-//                           </p>
-//                           <button 
-//                             onClick={clearHistory}
-//                             className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
-//                           >
+//                         <div className="flex items-center justify-between px-2 mb-2">
+//                           <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em] flex items-center gap-1.5">
+//                             <Clock size={11} /> Recentes
+//                           </span>
+//                           <button onClick={clearHistory} className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wide">
 //                             Limpar
 //                           </button>
 //                         </div>
-//                         <div className="space-y-1">
-//                           {recentSearches.map((term, i) => (
-//                             <button 
+//                         <div className="space-y-0.5">
+//                           {history.map((term, i) => (
+//                             <button
 //                               key={i}
 //                               onClick={() => setQuery(term)}
-//                               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-2xl font-bold text-sm text-gray-600 dark:text-gray-300 hover:text-primary transition-all group"
+//                               className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl text-sm text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-all group text-left"
 //                             >
-//                               <History size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors" />
-//                               {term}
+//                               <History size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors flex-shrink-0" />
+//                               <span className="flex-1 truncate font-medium">{term}</span>
+//                               <ArrowRight size={13} className="text-gray-200 dark:text-gray-700 group-hover:text-primary transition-colors" />
 //                             </button>
 //                           ))}
 //                         </div>
 //                       </section>
 //                     )}
 
+//                     {/* Atalhos rápidos */}
 //                     <section>
-//                       <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4 px-4">Sugestões de pesquisa</p>
-//                       <div className="grid grid-cols-2 gap-3 px-4">
-//                         {['Joao Silva', 'Consultoria', 'Fatura #1', 'Agendamento'].map(sug => (
-//                           <button 
-//                             key={sug}
-//                             onClick={() => setQuery(sug)}
-//                             className="px-4 py-3 bg-gray-50 dark:bg-slate-800 hover:bg-primary/5 rounded-2xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-primary transition-all text-left flex items-center gap-2"
+//                       <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em] px-2 mb-2 block">
+//                         Acesso rápido
+//                       </span>
+//                       <div className="grid grid-cols-2 gap-1.5">
+//                         {QUICK_LINKS.map(link => (
+//                           <button
+//                             key={link.path}
+//                             onClick={() => selectQuickLink(link.path)}
+//                             className="flex items-center gap-2.5 px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 hover:bg-primary/5 dark:hover:bg-primary/10 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-all text-left group"
 //                           >
-//                             <Search size={14} className="opacity-50" />
-//                             {sug}
+//                             <span className="text-gray-400 group-hover:text-primary transition-colors">{link.icon}</span>
+//                             {link.label}
 //                           </button>
 //                         ))}
 //                       </div>
@@ -274,22 +500,21 @@
 //                 )}
 //               </div>
 
-//               <div className="p-6 bg-gray-50 dark:bg-slate-800 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
-//                 <div className="flex flex-col md:flex-row md:items-center gap-4 lg:gap-6">
-//                   <div className="flex items-center gap-2">
-//                     <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded text-[10px] font-black dark:text-gray-300">ENTER</kbd>
-//                     <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Selecionar</span>
-//                   </div>
-//                   <div className="flex items-center gap-2">
-//                     <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded text-[10px] font-black dark:text-gray-300">↑↓</kbd>
-//                     <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Navegar</span>
-//                   </div>
-//                   <div className="flex items-center gap-2">
-//                     <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded text-[10px] font-black dark:text-gray-300">ESC</kbd>
-//                     <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Fechar</span>
-//                   </div>
+//               {/* Rodapé */}
+//               <div className="px-5 py-3 bg-gray-50 dark:bg-slate-800/60 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
+//                 <div className="flex items-center gap-4">
+//                   {[
+//                     { key: '↑↓', label: 'Navegar' },
+//                     { key: 'Enter', label: 'Abrir' },
+//                     { key: 'Esc', label: 'Fechar' },
+//                   ].map(k => (
+//                     <div key={k.key} className="flex items-center gap-1.5">
+//                       <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded text-[10px] font-bold text-gray-500 dark:text-gray-400">{k.key}</kbd>
+//                       <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide hidden sm:inline">{k.label}</span>
+//                     </div>
+//                   ))}
 //                 </div>
-//                 <span className="hidden sm:inline text-[10px] font-black text-primary uppercase tracking-[0.2em]">MiniERP Search</span>
+//                 <span className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest hidden sm:inline">Horizon Search</span>
 //               </div>
 //             </motion.div>
 //           </>

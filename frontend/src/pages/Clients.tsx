@@ -13,6 +13,7 @@ import {
   X,
   FileText,
   Filter,
+  ChevronRight,
 } from "lucide-react";
 import { Client, Appointment } from "../types";
 import { cn } from "../lib/utils";
@@ -22,6 +23,37 @@ import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { useCurrency } from "../contexts/CurrencyContext";
 
 export const API_URL = "http://localhost:3001";
+
+// Paleta de cores para os avatares, igual ao design de referência (cada cliente
+// recebe uma cor consistente com base no nome, em vez de todos usarem a cor
+// primária). Mantém o mesmo padrão de iniciais já usado no projeto.
+const AVATAR_COLORS = [
+  "bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400",
+  "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  "bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400",
+  "bg-cyan-100 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400",
+];
+
+function getAvatarColor(name: string) {
+  const safe = name || "S";
+  let hash = 0;
+  for (let i = 0; i < safe.length; i++) {
+    hash = safe.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
+}
+
+function getInitials(name: string) {
+  return (name || "S")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export function Clients() {
   const { formatCurrency } = useCurrency();
@@ -241,12 +273,14 @@ export function Clients() {
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 text-gray-900 dark:text-gray-100 transition-colors">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
+      {/* HEADER — mais compacto: título+subtítulo à esquerda, ação principal
+          à direita na mesma linha mesmo em telas menores (antes só md+) */}
+      <header className="flex flex-row items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white transition-colors truncate">
             Gestão de Clientes
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium transition-colors">
+          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium transition-colors truncate">
             Controlo total da sua carteira de clientes
           </p>
         </div>
@@ -256,16 +290,19 @@ export function Clients() {
             setFormData({ name: "", email: "", phone: "", service: "" });
             setIsModalOpen(true);
           }}
-          className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-95"
+          className="flex-shrink-0 flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-95"
         >
           <Plus size={20} />
-          Novo Cliente
+          <span className="hidden sm:inline">Novo Cliente</span>
         </button>
       </header>
 
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-sm">
+        {/* BUSCA + FILTROS — agora na mesma linha (busca ocupa o espaço
+            disponível, filtro fica compacto ao lado), reduzindo altura
+            ocupada antes de chegar à lista */}
+        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center gap-3">
+          <div className="relative flex-1">
             <Search
               className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
               size={18}
@@ -278,19 +315,20 @@ export function Clients() {
               className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-100 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
             />
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={cn(
-                "flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all",
-                showFilters
-                  ? "bg-primary text-white"
-                  : "bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700",
-              )}
-            >
-              <Filter size={16} /> {showFilters ? "Fechar Filtros" : "Filtros"}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn(
+              "flex-shrink-0 flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-2xl text-sm font-bold transition-all",
+              showFilters
+                ? "bg-primary text-white"
+                : "bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700",
+            )}
+          >
+            <Filter size={16} />
+            <span className="hidden sm:inline">
+              {showFilters ? "Fechar" : "Filtros"}
+            </span>
+          </button>
         </div>
 
         <AnimatePresence>
@@ -352,11 +390,13 @@ export function Clients() {
                 >
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
-                        {(client.name || "S")
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+                      <div
+                        className={cn(
+                          "w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform",
+                          getAvatarColor(client.name || ""),
+                        )}
+                      >
+                        {getInitials(client.name || "")}
                       </div>
                       <div>
                         <p className="text-sm font-bold text-gray-900 dark:text-white transition-colors">
@@ -447,81 +487,105 @@ export function Clients() {
           )}
         </div>
 
-        {/* Mobile Card Layout */}
+        {/* Mobile Card Layout — agora no estilo "linha de lista" do design de
+            referência: avatar com cor própria por cliente, nome + email,
+            badge de status à direita, chevron indicando que é clicável.
+            As ações (histórico/editar/eliminar) ficam reveladas ao tocar
+            no card, mantendo todas as funções de antes sem ocupar espaço
+            permanente em cada item. */}
         <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800 transition-colors">
           {filteredClients.map((client) => (
-            <div key={client.id} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-lg sm:text-xl shadow-inner flex-shrink-0">
-                  {(client.name || "S")
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+            <details key={client.id} className="group/card">
+              <summary className="list-none cursor-pointer p-4 sm:p-5 flex items-center gap-3 sm:gap-4 active:bg-gray-50 dark:active:bg-slate-800/50 transition-colors">
+                <div
+                  className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center font-black text-base flex-shrink-0",
+                    getAvatarColor(client.name || ""),
+                  )}
+                >
+                  {getInitials(client.name || "")}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white transition-colors truncate">
-                      {client.name}
-                    </h3>
-                    <span
-                      className={cn(
-                        "px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-wider flex-shrink-0",
-                        client.status === "Ativo"
-                          ? "bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400"
-                          : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400",
-                      )}
-                    >
-                      {client.status}
-                    </span>
-                  </div>
-                  <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5 truncate">
-                    {client.service || "—"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl transition-colors">
-                <div className="space-y-0.5">
-                  <p className="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                    Email
-                  </p>
-                  <p className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate lowercase">
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white transition-colors truncate">
+                    {client.name}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate lowercase">
                     {client.email}
                   </p>
                 </div>
-                <div className="space-y-0.5">
-                  <p className="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                    Telefone
-                  </p>
-                  <p className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">
-                    {client.phone || "—"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 sm:gap-3 pt-1">
-                <button
-                  onClick={() => openHistory(client)}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary/5 text-primary rounded-xl font-black text-[10px] uppercase tracking-widest border border-primary/10"
+                <span
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider flex-shrink-0",
+                    client.status === "Ativo"
+                      ? "bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400"
+                      : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400",
+                  )}
                 >
-                  <History size={16} /> Histórico
-                </button>
-                <div className="flex items-center gap-2">
+                  {client.status}
+                </span>
+                <ChevronRight
+                  size={18}
+                  className="text-gray-300 dark:text-gray-600 flex-shrink-0 transition-transform group-open/card:rotate-90"
+                />
+              </summary>
+
+              {/* Painel expansível com os detalhes e ações que antes ficavam
+                  sempre visíveis no card — nada foi removido, só passou a
+                  abrir sob demanda, deixando a lista mais limpa. */}
+              <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-1 space-y-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl transition-colors">
+                  <div className="space-y-0.5">
+                    <p className="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                      Telefone
+                    </p>
+                    <p className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">
+                      {client.phone || "—"}
+                    </p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                      Serviço
+                    </p>
+                    <p className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">
+                      {client.service || "—"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 sm:gap-3">
                   <button
-                    onClick={() => startEdit(client)}
-                    className="p-3 bg-gray-50 dark:bg-slate-800 text-gray-400 hover:text-blue-500 rounded-xl transition-all"
+                    onClick={() => openHistory(client)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary/5 text-primary rounded-xl font-black text-[10px] uppercase tracking-widest border border-primary/10"
                   >
-                    <Edit2 size={18} />
+                    <History size={16} /> Histórico
                   </button>
-                  <button
-                    onClick={() => setClientToDelete(client.id)}
-                    className="p-3 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-xl transition-all"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleStatus(client.id, client.status)}
+                      className="p-3 bg-gray-50 dark:bg-slate-800 text-gray-400 hover:text-primary rounded-xl transition-all"
+                    >
+                      {client.status === "Ativo" ? (
+                        <UserX size={18} />
+                      ) : (
+                        <UserCheck size={18} />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => startEdit(client)}
+                      className="p-3 bg-gray-50 dark:bg-slate-800 text-gray-400 hover:text-blue-500 rounded-xl transition-all"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => setClientToDelete(client.id)}
+                      className="p-3 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-xl transition-all"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </details>
           ))}
           {filteredClients.length === 0 && !loading && (
             <div className="p-10 text-center space-y-4">
@@ -557,11 +621,13 @@ export function Clients() {
             >
               <div className="p-8 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center font-black text-lg">
-                    {(selectedClient.name || "S")
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                  <div
+                    className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg",
+                      getAvatarColor(selectedClient.name || ""),
+                    )}
+                  >
+                    {getInitials(selectedClient.name || "")}
                   </div>
                   <div>
                     <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">

@@ -108,12 +108,12 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile Toggle */}
-      <button
+      {/* <button
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-sidebar text-white rounded-md"
       >
         {isOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
+      </button> */}
 
       {/* Backdrop */}
       <AnimatePresence>

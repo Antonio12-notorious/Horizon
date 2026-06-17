@@ -11,16 +11,17 @@ import appointmentsRoutes from "./modules/appointments/appointments.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import usersRoutes from "./modules/auth/user/user.routes";
 import notificationsRoutes from "./modules/notifications/notifications.routes";
+import searchRoutes from "./modules/search/Search.routes";
 
 const app = express();
 app.use(cors(config.cors));
 app.use(express.json());
+app.set("etag", false);
 
-// Middleware
 
 // Health check
 app.get("/", (req, res) => {
-    res.json({ 
+    res.json({
         message: "Horizon API 🚀",
         environment: config.server.env,
         timestamp: new Date().toISOString()
@@ -36,7 +37,7 @@ app.use("/api/invoices", invoicesRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/notifications", notificationsRoutes);
-
+app.use("/api/search", searchRoutes);      
 
 // 404 handler
 app.use((req, res) => {
