@@ -2,10 +2,10 @@
   "name": "backend",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/server.js",      
+  "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "start": "node dist/server.js"
   },
   "prisma": {
@@ -30,6 +30,7 @@
     "@types/node": "^22.19.17",
     "@types/nodemailer": "^8.0.0",
     "prisma": "^6.19.3",
+    "tsc-alias": "^1.8.17",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
