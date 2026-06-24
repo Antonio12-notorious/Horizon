@@ -63,7 +63,20 @@ export const config = {
 
     // CORS
     cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:5173",
+        origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+            const allowedOrigins = [
+                ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(",").map(origin => origin.trim()) : []),
+                "http://localhost:5173",
+                "https://horizon-erpt.vercel.app",
+            ].filter(Boolean);
+
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+                return;
+            }
+
+            callback(new Error(`Origin ${origin} not allowed by CORS`));
+        },
         credentials: true,
     },
 };
