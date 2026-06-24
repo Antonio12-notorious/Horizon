@@ -18,7 +18,7 @@ app.use(cors(config.cors));
 app.use(cors ({
     origin:[
         'http://localhost:5173',
-        'https://horizonlac.vercel.app'
+        'https://horizon-erpt.vercel.app'
     ]
 }))
 app.use(express.json());
@@ -54,7 +54,7 @@ app.use((req, res) => {
     });
 });
 
-// Global error handler (deve ser o último middleware)
+// Global error handler
 app.use(errorHandler);
 
 export default app;

@@ -2,11 +2,11 @@
   "name": "backend",
   "version": "1.0.0",
   "type": "module",
-  "main": "server.ts",
+  "main": "dist/server.js",      
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "tsx dist/server.js"
+    "start": "node dist/server.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
