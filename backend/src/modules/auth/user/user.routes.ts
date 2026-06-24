@@ -12,12 +12,12 @@ import {
     getSecurityLogs,
     updateProfile,
     getProfile,
-} from "./user.controller";
-import { authMiddleware } from "../../../middleware/auth.middleware";
-import { roleMiddleware } from "../../../middleware/role.middleware";
-import { validateSchema } from "../../../middleware/validate.middleware";
-import { asyncHandler } from "../../../utils/asyncHandler";
-import { createUserSchema, updateUserSchema, updateProfileSchema } from "../../../schemas/user.schemas";
+} from "./user.controller.js";
+import { authMiddleware } from "../../../middleware/auth.middleware.js";
+import { roleMiddleware } from "../../../middleware/role.middleware.js";
+import { validateSchema } from "../../../middleware/validate.middleware.js";
+import { asyncHandler } from "../../../utils/asyncHandler.js";
+import { createUserSchema, updateUserSchema, updateProfileSchema } from "../../../schemas/user.schemas.js";
 const router = Router();
 
 // ─── Rotas de perfil do próprio usuário (exigem autenticação) ────────────────

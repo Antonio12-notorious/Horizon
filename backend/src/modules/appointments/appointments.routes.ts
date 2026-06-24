@@ -1,16 +1,16 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middleware/auth.middleware";
-import { roleMiddleware } from "../../middleware/role.middleware";
-import { validateSchema } from "../../middleware/validate.middleware";
-import { createAppointmentSchema, updateAppointmentSchema } from "../../schemas/appointments.schemas";
-import { asyncHandler } from "../../utils/asyncHandler";
+import { authMiddleware } from "../../middleware/auth.middleware.js";
+import { roleMiddleware } from "../../middleware/role.middleware.js";
+import { validateSchema } from "../../middleware/validate.middleware.js";
+import { createAppointmentSchema, updateAppointmentSchema } from "../../schemas/appointments.schemas.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 import {
     getAppointments,
     createAppointment,
     updateAppointment,
     deleteAppointment,
-} from "./appointments.controller";
+} from "./appointments.controller.js";
 
 const router = Router();
 

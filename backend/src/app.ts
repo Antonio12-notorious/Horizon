@@ -1,17 +1,17 @@
 import express from "express";
 import cors from "cors";
 import { config } from "./config/index.js";
-import { errorHandler } from "./middleware/error.middleware";
+import { errorHandler } from "./middleware/error.middleware.js";
 
-import authRoutes from "./modules/auth/auth.routes";
-import clientsRoutes from "./modules/clients/clients.routes";
-import servicesRoutes from "./modules/services/service.routes";
-import invoicesRoutes from "./modules/invoices/invoices.routes";
-import appointmentsRoutes from "./modules/appointments/appointments.routes";
-import dashboardRoutes from "./modules/dashboard/dashboard.routes";
-import usersRoutes from "./modules/auth/user/user.routes";
-import notificationsRoutes from "./modules/notifications/notifications.routes";
-import searchRoutes from "./modules/search/Search.routes";
+import authRoutes from "./modules/auth/auth.routes.js";
+import clientsRoutes from "./modules/clients/clients.routes.js";
+import servicesRoutes from "./modules/services/service.routes.js";
+import invoicesRoutes from "./modules/invoices/invoices.routes.js";
+import appointmentsRoutes from "./modules/appointments/appointments.routes.js";
+import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
+import usersRoutes from "./modules/auth/user/user.routes.js";
+import notificationsRoutes from "./modules/notifications/notifications.routes.js";
+import searchRoutes from "./modules/search/Search.routes.js";
 
 const app = express();
 app.use(cors(config.cors));

@@ -1,10 +1,10 @@
 import { Router } from "express";
-import * as controller from "./service.controller";
-import { authMiddleware } from "../../middleware/auth.middleware";
-import { roleMiddleware } from "../../middleware/role.middleware";
-import { validateSchema } from "../../middleware/validate.middleware";
-import { createServiceSchema, updateServiceSchema } from "../../schemas/service.schemas";
-import { asyncHandler } from "../../utils/asyncHandler";
+import * as controller from "./service.controller.js";
+import { authMiddleware } from "../../middleware/auth.middleware.js";
+import { roleMiddleware } from "../../middleware/role.middleware.js";
+import { validateSchema } from "../../middleware/validate.middleware.js";
+import { createServiceSchema, updateServiceSchema } from "../../schemas/service.schemas.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const router = Router();
 

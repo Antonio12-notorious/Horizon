@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import * as authService from "./auth.service";
-import { AuthRequest } from "../../middleware/auth.middleware";
-import { AppError } from "../../middleware/error.middleware";
+import * as authService from "./auth.service.js";
+import { AuthRequest } from "../../middleware/auth.middleware.js";
+import { AppError } from "../../middleware/error.middleware.js";
 
 export interface ValidatedRequest extends Request {
     validatedData?: any;

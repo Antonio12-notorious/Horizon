@@ -1,6 +1,6 @@
-import { prisma } from "../../lib/prisma";
-import { generateToken, generateRefreshToken, verifyRefreshToken } from "../../utils/jwt";
-import { AppError } from "../../middleware/error.middleware";
+import { prisma } from "../../lib/prisma.js";
+import { generateToken, generateRefreshToken, verifyRefreshToken } from "../../utils/jwt.js";
+import { AppError } from "../../middleware/error.middleware.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 

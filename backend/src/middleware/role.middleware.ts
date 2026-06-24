@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { AuthRequest } from "./auth.middleware";
+import { AuthRequest } from "./auth.middleware.js";
 
 export function roleMiddleware(allowedRoles: string[]) {
     return (req: AuthRequest, res: Response, next: NextFunction) => {

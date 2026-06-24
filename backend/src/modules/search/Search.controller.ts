@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { search, ResultType } from "./Search.service";
+import { search, ResultType } from "./Search.service.js";
 
 const VALID_TYPES: ResultType[] = ["client", "service", "invoice", "appointment"];
 

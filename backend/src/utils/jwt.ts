@@ -1,5 +1,5 @@
 import jwt, { SignOptions } from "jsonwebtoken";
-import { config } from "../config";
+import { config } from "../config/index.js";
 
 // ─── Access Token (curta duração) ─────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import * as invoiceService from "./invoices.services";
-import { AppError } from "../../middleware/error.middleware";
+import * as invoiceService from "./invoices.services.js";
+import { AppError } from "../../middleware/error.middleware.js";
 
 export async function getInvoices(req: Request, res: Response) {
     const invoices = await invoiceService.getAllInvoices();

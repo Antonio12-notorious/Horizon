@@ -7,16 +7,16 @@ import {
     forgotPassword,
     resetPassword,
     getMe,
-} from "./auth.controller";
-import { validateSchema } from "../../middleware/validate.middleware";
-import { authMiddleware } from "../../middleware/auth.middleware";
-import { asyncHandler } from "../../utils/asyncHandler";
+} from "./auth.controller.js";
+import { validateSchema } from "../../middleware/validate.middleware.js";
+import { authMiddleware } from "../../middleware/auth.middleware.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
     loginSchema,
     changePasswordSchema,
     forgotPasswordSchema,
     resetPasswordSchema,
-} from "../../schemas/auth.schemas";
+} from "../../schemas/auth.schemas.js";
 
 const router = Router();
 

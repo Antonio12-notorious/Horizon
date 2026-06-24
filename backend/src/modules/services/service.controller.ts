@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import * as serviceService from "./services.service";
-import { AppError } from "../../middleware/error.middleware";
+import * as serviceService from "./services.service.js";
+import { AppError } from "../../middleware/error.middleware.js";
 
 export async function getServices(req: Request, res: Response) {
     const services = await serviceService.getAllServices();

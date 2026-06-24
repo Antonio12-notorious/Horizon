@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import app from "./app.js";
-import { config } from "./config";
+import { config } from "./config/index.js";
 
 const server = app.listen(config.server.port, () => {
   console.log(`

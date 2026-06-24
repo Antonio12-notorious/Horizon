@@ -1,7 +1,7 @@
 import { Response } from "express";
-import * as userService from "./user.service";
-import { AuthRequest } from "../../../middleware/auth.middleware";
-import { ValidatedRequest } from "../auth.controller";
+import * as userService from "./user.service.js";
+import { AuthRequest } from "../../../middleware/auth.middleware.js";
+import { ValidatedRequest } from "../auth.controller.js";
 
 // ─── Listar ───────────────────────────────────────────────────────────────────
 

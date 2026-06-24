@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import * as appointmentService from "./appointments.service";
-import { AppError } from "../../middleware/error.middleware";
+import * as appointmentService from "./appointments.service.js";
+import { AppError } from "../../middleware/error.middleware.js";
 
 export async function getAppointments(req: Request, res: Response) {
     const appointments = await appointmentService.getAppointments();

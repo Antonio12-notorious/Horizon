@@ -1,4 +1,4 @@
-import { verifyToken } from "../utils/jwt";
+import { verifyToken } from "../utils/jwt.js";
 import { Request, Response, NextFunction } from "express";
 
 // 🔐 extender Request para incluir user

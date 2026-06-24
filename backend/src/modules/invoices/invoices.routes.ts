@@ -1,8 +1,8 @@
 import { Router } from "express";
-import * as invoiceController from "./invoices.controller";
-import { authMiddleware } from "../../middleware/auth.middleware";
-import { roleMiddleware } from "../../middleware/role.middleware";
-import { asyncHandler } from "../../utils/asyncHandler";
+import * as invoiceController from "./invoices.controller.js";
+import { authMiddleware } from "../../middleware/auth.middleware.js";
+import { roleMiddleware } from "../../middleware/role.middleware.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const router = Router();
 

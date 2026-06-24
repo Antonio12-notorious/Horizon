@@ -1,6 +1,6 @@
 import { Response } from "express";
-import * as clientsService from "./clients.service";
-import { AppError } from "../../middleware/error.middleware";
+import * as clientsService from "./clients.service.js";
+import { AppError } from "../../middleware/error.middleware.js";
 
 export interface ValidatedRequest {
     validatedData?: any;
