@@ -15,12 +15,13 @@ import searchRoutes from "./modules/search/Search.routes.js";
 
 const app = express();
 app.use(cors(config.cors));
-app.use(cors ({
-    origin:[
+app.use(cors({
+    origin: [
         'http://localhost:5173',
-        'https://horizon-erpt.vercel.app'
-    ]
-}))
+        'https://horizon-erpt.vercel.app', 
+    ],
+    credentials: true,
+}));
 app.use(express.json());
 app.set("etag", false);
 
